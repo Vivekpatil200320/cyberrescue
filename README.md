@@ -1,3 +1,24 @@
+# 🐋 CyberRescue
+
+<p align="center">
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License MIT">
+  <img src="https://img.shields.io/badge/Python-3.12%2B-brightgreen.svg" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/Built%20with-MCP-orange.svg" alt="Built with Model Context Protocol">
+</p>
+
+### **Give Claude eyes and hands inside your broken Docker containers.**
+
+---
+
+## 📺 Live Triage Demonstration (33s)
+
+<p align="center">
+  <img src="./assets/cyberrescue-demo.gif" width="100%" alt="CyberRescue Autonomous Debugging Loop Demo">
+</p>
+
+> **Architectural Paradigm Shift:** CyberRescue operates entirely at the host user-space layer, interfacing directly with the master Docker daemon (`/var/run/docker.sock`). This enables local AI agents running inside secure sandboxes (like Claude Code) or remote windows (like Claude Cowork) to query real-time log streams and extract kernel metrics from containers that have completely exited or are locked in startup boot-loops.
+
+---
 # CyberRescue
 
 A locally-hosted MCP (Model Context Protocol) server that gives Claude real tools to debug Docker containers — fetch logs, inspect memory/CPU, and run diagnostic commands inside a container, all from a chat with Claude Desktop.
