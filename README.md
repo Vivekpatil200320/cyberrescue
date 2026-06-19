@@ -1,4 +1,4 @@
-cat > README.md << 'EOF'
+
 # CyberRescue
 
 A locally-hosted MCP (Model Context Protocol) server that gives Claude real tools to debug Docker containers — fetch logs, inspect memory/CPU, and run diagnostic commands inside a container, all from a chat with Claude Desktop.
@@ -88,4 +88,4 @@ See [SECURITY.md](SECURITY.md) for the input validation and command blocklist po
 ## License
 
 MIT
-EOF
+
