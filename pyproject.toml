@@ -1,11 +1,14 @@
 [project]
 name = "cyberrescue"
 version = "0.1.0"
-description = "Local MCP server for debugging Docker containers"
+description = "Secure host-level telemetry gateway for sandboxed AI agents to dynamically triage Docker containers"
 readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "MIT" } # <-- CRITICAL: This fixes the Glama "F" License check
+
 dependencies = [
     "mcp>=1.0.0",
+    "fastmcp>=0.4.1",         # <-- REQUIRED: Added since your server imports FastMCP
     "python-on-whales>=0.73.0",
 ]
 
