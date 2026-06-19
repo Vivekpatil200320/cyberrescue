@@ -16,7 +16,11 @@
   <img src="./assets/cyberrescue-demo.gif" width="100%" alt="CyberRescue Autonomous Debugging Loop Demo">
 </p>
 
-> **Architectural Paradigm Shift:** CyberRescue operates entirely at the host user-space layer, interfacing directly with the master Docker daemon (`/var/run/docker.sock`). This enables local AI agents running inside secure sandboxes (like Claude Code) or remote windows (like Claude Cowork) to query real-time log streams and extract kernel metrics from containers that have completely exited or are locked in startup boot-loops.
+
+
+https://github.com/user-attachments/assets/0ee0f583-b8c1-4abe-9dd4-4b59ec25fd49
+
+
 
 ---
 # CyberRescue
