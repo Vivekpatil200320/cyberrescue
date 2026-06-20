@@ -8,6 +8,8 @@
 
 ### **Give Claude eyes and hands inside your broken Docker containers.**
 
+[![cyberrescue MCP server](https://glama.ai/mcp/servers/Vivekpatil200320/cyberrescue/badges/card.svg)](https://glama.ai/mcp/servers/Vivekpatil200320/cyberrescue)
+
 ---
 
 ## 📺 Live Triage Demonstration (33s)
