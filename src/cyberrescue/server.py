@@ -38,6 +38,37 @@ except Exception:
     )
 
 
+# Retry policy for read-only telemetry calls (logs, stats). Transient
+# daemon hiccups — socket resets, brief unresponsiveness under load —
+# resolve within a retry or two; only idempotent reads are retried,
+# never `docker exec`.
+RETRY_ATTEMPTS = 3
+RETRY_BASE_DELAY_S = 0.5
+
+
+async def _docker_call_with_retry(fn, /, *args, **kwargs):
+    """Run a read-only docker call in a thread, retrying transient failures.
+
+    Exponential back-off: 0.5s, 1s between attempts. Raises the last
+    DockerException if all attempts fail.
+    """
+    last_exc: Exception | None = None
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            return await asyncio.to_thread(fn, *args, **kwargs)
+        except DockerException as exc:
+            last_exc = exc
+            if attempt < RETRY_ATTEMPTS - 1:
+                delay = RETRY_BASE_DELAY_S * (2 ** attempt)
+                logger.warning(
+                    "Docker call failed (attempt %d/%d), retrying in %.1fs: %s",
+                    attempt + 1, RETRY_ATTEMPTS, delay, exc,
+                )
+                await asyncio.sleep(delay)
+    assert last_exc is not None
+    raise last_exc
+
+
 def _safe_docker_error(container_id: str, exc: Exception) -> RuntimeError:
     """Log the real exception internally; return a sanitized one to the client.
 
@@ -91,7 +122,7 @@ async def stream_container_logs(
 
     async with _docker_sem:
         try:
-            raw_logs = await asyncio.to_thread(
+            raw_logs = await _docker_call_with_retry(
                 docker.container.logs,
                 container_id,
                 tail=tail,
@@ -157,7 +188,7 @@ async def inspect_memory_dump(container_id: str, include_processes: bool = True)
 
     async with _docker_sem:
         try:
-            stats_list = await asyncio.to_thread(docker.stats, containers=container_id)
+            stats_list = await _docker_call_with_retry(docker.stats, containers=container_id)
         except DockerException as exc:
             raise _safe_docker_error(container_id, exc) from None
 
