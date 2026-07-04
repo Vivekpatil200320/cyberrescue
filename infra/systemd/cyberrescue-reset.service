@@ -1,0 +1,10 @@
+[Unit]
+Description=Recreate CyberRescue demo containers from a clean state
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=cyberrescue
+WorkingDirectory=/opt/cyberrescue/infra
+ExecStart=/home/cyberrescue/.local/bin/uv run --project /opt/cyberrescue python reset_demo.py

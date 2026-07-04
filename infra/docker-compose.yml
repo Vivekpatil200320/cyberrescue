@@ -1,0 +1,17 @@
+services:
+  broken-flask:
+    build: ../demo/broken_flask
+    container_name: broken-flask
+    restart: on-failure
+    # No DATABASE_URL on purpose — this container is meant to crash on startup.
+
+  leaking-node:
+    build: ../demo/leaking_node
+    container_name: leaking-node
+    restart: on-failure
+    mem_limit: 256m
+
+  crashed-nginx:
+    build: ../demo/crashed_nginx
+    container_name: crashed-nginx
+    restart: on-failure

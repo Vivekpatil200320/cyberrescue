@@ -1,0 +1,10 @@
+[Unit]
+Description=Run cyberrescue-reset.service every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Unit=cyberrescue-reset.service
+
+[Install]
+WantedBy=timers.target

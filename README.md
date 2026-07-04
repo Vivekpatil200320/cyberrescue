@@ -2,6 +2,24 @@
 
 A locally-hosted MCP (Model Context Protocol) server that gives Claude real tools to debug Docker containers — fetch logs, inspect memory/CPU, and run diagnostic commands inside a container, all from a chat with Claude Desktop.
 
+## Live Demo
+
+*(Link goes here once deployed — backend setup: [infra/README.md](infra/README.md); frontend: deploy `web/` to Vercel with its root directory set to `web/`.)*
+A public demo of the real tool running against 3 intentionally broken sandboxed containers
+(`broken-flask`, `leaking-node`, `crashed-nginx`). It's the same `stream_container_logs` /
+`inspect_memory_dump` /
+`execute_isolated_script` logic used by the local MCP server, exposed over a small FastAPI
+backend that's locked to those 3 containers with a fixed diagnostic-command menu (no arbitrary
+containers, no freeform shell input) — see [SECURITY.md](SECURITY.md#public-demo-mode) for the
+full threat model. The local MCP path (this README, below) and the public demo are two
+different deployment contexts sharing one core (`src/cyberrescue/core.py`).
+
+```
+Claude Desktop --stdio--> server.py ---\
+                                        +--> core.py (docker calls) --> Docker daemon
+   Vercel (Next.js) --HTTPS--> backend/app --/
+```
+
 ## What it does
 
 CyberRescue exposes three tools to Claude:
@@ -185,6 +203,25 @@ docker build -t demo-broken-flask demo/broken_flask
 docker build -t demo-leaking-node demo/leaking_node
 docker build -t demo-crashed-nginx demo/crashed_nginx
 ```
+
+These same 3 containers, run via `infra/docker-compose.yml` with fixed names
+(`broken-flask`, `leaking-node`, `crashed-nginx`), are what the public web demo above is
+sandboxed to — see `src/cyberrescue/demo_policy.py`.
+
+## Public web demo architecture
+
+- `src/cyberrescue/core.py` — the actual Docker-calling logic (logs/stats/exec), shared by both
+  paths below.
+- `src/cyberrescue/server.py` — thin `@mcp.tool()` wrappers around `core.py`, served over stdio
+  for Claude Desktop. Unchanged behavior from earlier versions.
+- `src/cyberrescue/demo_policy.py` — the allowlist (3 fixed container names) and fixed
+  diagnostic-command menu used only by the public HTTP backend, never by the stdio tools.
+- `backend/` — a FastAPI app (separate `uv` workspace member, own dependencies) that wraps
+  `core.py` under the `demo_policy` restrictions, adds rate limiting, and an `/narrate` route
+  that asks Claude to generate a root-cause explanation from already-captured evidence.
+- `web/` — a Next.js/Tailwind frontend (deployed to Vercel) that talks to the backend.
+- `infra/` — VPS deployment artifacts (docker-compose for the 3 demo containers, systemd units,
+  Caddy config, a periodic reset job). See [infra/README.md](infra/README.md) to stand it up.
 
 ## Security
 

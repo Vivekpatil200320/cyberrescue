@@ -1,37 +1,16 @@
-"""CyberRescue MCP server — main entry point and tool implementations."""
+"""CyberRescue MCP server — main entry point and tool registration.
 
-import asyncio
-import logging
-from datetime import datetime
+Tool logic lives in core.py; this module only wires it up as MCP tools
+served over stdio for Claude Desktop.
+"""
+
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
-from python_on_whales import docker
-from python_on_whales.exceptions import DockerException
 
-from cyberrescue.security import check_command_safety, validate_container_id
+from cyberrescue import core
 
 mcp = FastMCP("CyberRescue")
-logger = logging.getLogger("cyberrescue")
-
-MAX_LOG_BYTES = 50 * 1024  # 50KB hard cap
-
-# Caps concurrent docker daemon calls so a multi-tool agent loop can't
-# flood the daemon with unbounded simultaneous subprocesses.
-_docker_sem = asyncio.Semaphore(4)
-
-
-def _safe_docker_error(container_id: str, exc: Exception) -> RuntimeError:
-    """Log the real exception internally; return a sanitized one to the client.
-
-    Raw DockerException text can include host paths (socket paths, user
-    dirs) — never pass it straight through to the MCP client.
-    """
-    logger.error("Docker error for container %s: %s", container_id, exc)
-    return RuntimeError(
-        f"Docker operation failed for container {container_id!r}. "
-        "Check the container exists and the Docker daemon is running."
-    )
 
 
 @mcp.tool()
@@ -52,55 +31,7 @@ async def stream_container_logs(
     Returns:
         dict with container_id, log_lines, line_count, truncated.
     """
-    validate_container_id(container_id)
-
-    since_dt = None
-    if since:
-        try:
-            since_dt = datetime.fromisoformat(since)
-        except ValueError as exc:
-            raise ValueError(
-                f"Invalid `since` timestamp: {since!r}. Expected ISO 8601, "
-                "e.g. 2026-06-18T10:00:00"
-            ) from exc
-
-    async with _docker_sem:
-        try:
-            raw_logs = await asyncio.to_thread(
-                docker.container.logs,
-                container_id,
-                tail=tail,
-                since=since_dt,
-                timestamps=True,
-            )
-        except DockerException as exc:
-            raise _safe_docker_error(container_id, exc) from None
-
-    lines = raw_logs.splitlines()
-
-    if filter_keyword:
-        lines = [line for line in lines if filter_keyword in line]
-
-    truncated = False
-    joined = "\n".join(lines)
-    if len(joined.encode("utf-8")) > MAX_LOG_BYTES:
-        truncated = True
-        kept = []
-        total_bytes = 0
-        for line in reversed(lines):
-            line_bytes = len(line.encode("utf-8")) + 1
-            if total_bytes + line_bytes > MAX_LOG_BYTES:
-                break
-            kept.append(line)
-            total_bytes += line_bytes
-        lines = list(reversed(kept))
-
-    return {
-        "container_id": container_id,
-        "log_lines": lines,
-        "line_count": len(lines),
-        "truncated": truncated,
-    }
+    return await core.stream_container_logs(container_id, tail, since, filter_keyword)
 
 
 @mcp.tool()
@@ -120,41 +51,7 @@ async def inspect_memory_dump(container_id: str, include_processes: bool = True)
         dict with cpu_percent, memory_mb, memory_limit_mb, memory_percent,
         and optionally processes (list of strings, one per ps line).
     """
-    validate_container_id(container_id)
-
-    async with _docker_sem:
-        try:
-            stats_list = await asyncio.to_thread(docker.stats, containers=container_id)
-        except DockerException as exc:
-            raise _safe_docker_error(container_id, exc) from None
-
-    if not stats_list:
-        raise RuntimeError(
-            f"No stats returned for container {container_id!r}. It may not "
-            "exist or may not be running (docker stats requires a running container)."
-        )
-
-    stats = stats_list[0]
-
-    result = {
-        "cpu_percent": stats.cpu_percentage,
-        "memory_mb": round(stats.memory_used / (1024 * 1024), 2),
-        "memory_limit_mb": round(stats.memory_limit / (1024 * 1024), 2),
-        "memory_percent": stats.memory_percentage,
-    }
-
-    if include_processes:
-        async with _docker_sem:
-            try:
-                ps_output = await asyncio.to_thread(
-                    docker.container.execute, container_id, ["ps", "aux", "--sort=-%mem"]
-                )
-                result["processes"] = ps_output.splitlines()
-            except DockerException as exc:
-                logger.error("ps failed in container %s: %s", container_id, exc)
-                result["processes"] = ["<process listing unavailable in this container>"]
-
-    return result
+    return await core.inspect_memory_dump(container_id, include_processes)
 
 
 @mcp.tool()
@@ -175,35 +72,7 @@ async def execute_isolated_script(
     Returns:
         dict with stdout, stderr, exit_code, timed_out.
     """
-    validate_container_id(container_id)
-    check_command_safety(command)
-
-    async with _docker_sem:
-        proc = await asyncio.create_subprocess_exec(
-            "docker", "exec", container_id, "sh", "-c", command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-
-        try:
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout_seconds
-            )
-            timed_out = False
-            exit_code = proc.returncode
-        except asyncio.TimeoutError:
-            proc.kill()
-            await proc.wait()
-            stdout_bytes, stderr_bytes = b"", b""
-            timed_out = True
-            exit_code = -1
-
-    return {
-        "stdout": stdout_bytes.decode("utf-8", errors="replace"),
-        "stderr": stderr_bytes.decode("utf-8", errors="replace"),
-        "exit_code": exit_code,
-        "timed_out": timed_out,
-    }
+    return await core.execute_isolated_script(container_id, command, timeout_seconds)
 
 
 def main() -> None:

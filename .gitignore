@@ -2,4 +2,13 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
 .DS_Store
+
+# Backend secrets (real values live in the VPS-side EnvironmentFile only)
+backend/.env
+
+# Frontend
+web/node_modules/
+web/.next/
+web/.env.local

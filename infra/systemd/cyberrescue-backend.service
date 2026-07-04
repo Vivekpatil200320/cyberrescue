@@ -1,0 +1,16 @@
+[Unit]
+Description=CyberRescue public demo backend (FastAPI)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=cyberrescue
+WorkingDirectory=/opt/cyberrescue/backend
+EnvironmentFile=/etc/cyberrescue/backend.env
+ExecStart=/home/cyberrescue/.local/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

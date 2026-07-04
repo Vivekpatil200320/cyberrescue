@@ -33,12 +33,57 @@ Raw Docker daemon error messages (which can include host paths) are logged local
 **No network exposure**
 CyberRescue communicates with Claude Desktop exclusively over stdio. It opens no network ports and has no remote attack surface.
 
-## Out of scope
+## Out of scope (local MCP mode)
 
 - Multi-host / Docker Swarm deployments
 - Multi-tenant or remote access
 - Audit logging / compliance trails (not implemented in v0.1.0)
 - Rate limiting (not implemented in v0.1.0 — acceptable for single-user local use)
+
+## Public demo mode
+
+The web demo (`backend/` + `web/`, described in the README) is a **separate trust model**,
+not a relaxation of the local-mode policy above. Local mode assumes a trusted single user
+talking to their own containers over stdio; public demo mode assumes an anonymous internet
+visitor and is designed accordingly:
+
+**Container allowlist, not user-supplied IDs**
+Every public route validates the container name against `cyberrescue.demo_policy.DEMO_CONTAINERS`
+— exactly `broken-flask`, `leaking-node`, `crashed-nginx`. There is no route that accepts an
+arbitrary `container_id`; the local mode's regex-based `validate_container_id` still runs
+underneath as defense-in-depth, but the primary control is the fixed allowlist.
+
+**Fixed diagnostic menu, not freeform shell text**
+`execute_isolated_script` is freeform for local Claude Desktop users (guarded only by the
+blocklist in `security.py`, which itself admits it "cannot guarantee exhaustive coverage" —
+an acceptable tradeoff for a trusted local user, not for an anonymous public one). The public
+`/diagnose` route instead accepts only a `command_key` enum
+(`cyberrescue.demo_policy.DEMO_COMMAND_MENU`); the server looks up the literal shell string,
+so client-supplied text is never interpolated into a shell. The existing blocklist still runs
+against the resolved command as cheap additional defense-in-depth.
+
+**Rate limiting**
+Per-IP limits (via `slowapi`) on every public route, tighter on `/diagnose` and tightest on
+`/narrate` (the route that calls the Anthropic API), plus a separate concurrency cap on
+in-flight Anthropic calls to bound spend from a traffic burst.
+
+**No client-trusted evidence**
+`/narrate` re-fetches logs/stats server-side rather than accepting client-submitted "evidence"
+as the basis for the LLM prompt.
+
+**Periodic reset**
+The 3 demo containers are recreated on a timer (`infra/systemd/cyberrescue-reset.timer`,
+`infra/reset_demo.py`) so a visitor interacting with (or crashing) a container can't
+permanently affect the demo for the next visitor. `restart: on-failure` in
+`infra/docker-compose.yml` is a faster always-on backstop between resets.
+
+**CORS**
+The backend's `allow_origins` is restricted to the exact deployed frontend URL(s) — never `*`,
+since this backend performs real Docker operations.
+
+**Secrets never reach the frontend**
+`ANTHROPIC_API_KEY` lives only in the VPS-side environment file (`/etc/cyberrescue/backend.env`,
+`chmod 600`, never committed); the frontend only knows the backend's public base URL.
 
 ## Reporting
 
