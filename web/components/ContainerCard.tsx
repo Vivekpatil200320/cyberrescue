@@ -6,15 +6,20 @@ export default function ContainerCard({ container }: { container: ContainerSumma
   return (
     <Link
       href={`/containers/${container.name}`}
-      className="block rounded-lg border border-gray-200 p-5 transition hover:border-gray-400 hover:shadow-sm"
+      className="group block cursor-pointer rounded-xl border border-border bg-surface p-5 transition-all duration-200 hover:border-accent/50 hover:bg-surface-muted focus-visible:border-accent/50"
     >
-      <div className="flex items-center justify-between">
-        <h3 className="font-mono text-lg font-semibold">{container.name}</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="truncate font-mono text-base font-medium text-foreground">
+          {container.name}
+        </h3>
         <StatusBadge state={container.state} />
       </div>
-      <p className="mt-2 text-sm text-gray-600">{container.description}</p>
-      <span className="mt-4 inline-block text-sm font-medium text-blue-600">
-        Debug this container &rarr;
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        {container.description}
+      </p>
+      <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent transition-transform duration-200 group-hover:translate-x-0.5">
+        Debug this container
+        <span aria-hidden="true">&rarr;</span>
       </span>
     </Link>
   );

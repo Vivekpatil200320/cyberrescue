@@ -14,11 +14,13 @@ export default function DiagnosticMenu({
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [result, setResult] = useState<DiagnoseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
   async function run(key: string) {
     setActiveKey(key);
     setResult(null);
     setError(null);
+    setRunning(true);
     try {
       const res = await diagnose(containerName, key);
       setResult(res);
@@ -30,6 +32,8 @@ export default function DiagnosticMenu({
       } else {
         setError("Something went wrong running this diagnostic.");
       }
+    } finally {
+      setRunning(false);
     }
   }
 
@@ -40,31 +44,34 @@ export default function DiagnosticMenu({
           <button
             key={cmd.key}
             onClick={() => run(cmd.key)}
-            disabled={activeKey === cmd.key && !result && !error}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            disabled={running && activeKey === cmd.key}
+            className="cursor-pointer rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-foreground transition-colors duration-150 hover:border-accent/50 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cmd.label}
           </button>
         ))}
       </div>
 
-      {activeKey && !result && !error && (
-        <p className="mt-3 text-sm text-gray-500">Running {activeKey}…</p>
+      {running && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+          Running {activeKey}…
+        </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
       {result && (
         <div className="mt-3 space-y-2">
-          <pre className="max-h-60 overflow-auto rounded-md bg-gray-950 p-4 text-xs text-gray-100">
+          <pre className="max-h-60 overflow-auto rounded-lg border border-border bg-surface-muted p-4 font-mono text-xs leading-relaxed text-foreground/90">
             {result.stdout || "(no stdout)"}
           </pre>
           {result.stderr && (
-            <pre className="max-h-40 overflow-auto rounded-md bg-red-950 p-4 text-xs text-red-100">
+            <pre className="max-h-40 overflow-auto rounded-lg border border-destructive/30 bg-destructive/5 p-4 font-mono text-xs leading-relaxed text-destructive">
               {result.stderr}
             </pre>
           )}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             exit code {result.exit_code}
             {result.timed_out ? " (timed out)" : ""}
           </p>

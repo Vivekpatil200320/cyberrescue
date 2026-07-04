@@ -30,19 +30,28 @@ export default function NarrativePanel({ containerName }: { containerName: strin
   }
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-blue-900">AI Root-Cause Diagnosis</h3>
+    <div className="rounded-xl border border-accent/20 bg-gradient-to-br from-accent/[0.06] to-transparent p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 font-medium text-foreground">
+          <span className="text-accent" aria-hidden="true">
+            ✦
+          </span>
+          AI Root-Cause Diagnosis
+        </h3>
         <button
           onClick={generate}
           disabled={loading}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="cursor-pointer rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition-opacity duration-150 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Thinking…" : "Generate AI diagnosis"}
         </button>
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      {text && <p className="mt-3 whitespace-pre-line text-sm text-blue-950">{text}</p>}
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+      {text && (
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+          {text}
+        </p>
+      )}
     </div>
   );
 }
