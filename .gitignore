@@ -12,3 +12,5 @@ backend/.env
 web/node_modules/
 web/.next/
 web/.env.local
+
+scratch_node/node_modules/
