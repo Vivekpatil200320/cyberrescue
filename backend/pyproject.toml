@@ -5,7 +5,7 @@ description = "Public web demo backend for CyberRescue — FastAPI wrapper scope
 requires-python = ">=3.12"
 dependencies = [
     "cyberrescue",
-    "fastapi>=0.115.0",
+    "fastapi>=0.139.2",
     "uvicorn[standard]>=0.32.0",
     "slowapi>=0.1.9",
     "anthropic>=0.117.0",
