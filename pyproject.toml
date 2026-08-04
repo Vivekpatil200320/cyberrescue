@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp>=1.28.1",
     "python-on-whales>=0.73.0",
 ]
 
