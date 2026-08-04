@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "cyberrescue",
     "fastapi>=0.139.2",
-    "uvicorn[standard]>=0.32.0",
+    "uvicorn[standard]>=0.51.0",
     "slowapi>=0.1.9",
     "anthropic>=0.120.0",
     "pydantic-settings>=2.6.0",
